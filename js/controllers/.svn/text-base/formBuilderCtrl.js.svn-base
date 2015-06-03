@@ -1,0 +1,157 @@
+define([
+	'app',
+	'js/directives/formBuilder.js'], 
+	function (app) {
+	'use restrict';
+	app.register.controller('formBuilderCtrl', function($scope, INIT, MyHTTP) {
+		var tempFormList = [];
+
+		$scope.elDefinition = {};
+		$scope.formList = [];
+		$scope.selectFormForLoadIndex = 0;
+
+		$scope.loadFormQ = {};
+
+		/*INI*/
+
+		var getFormList = function() {
+			MyHTTP.get(INIT.GET_ALL_ENTRY_POINTS).
+				then(function(response) {
+					
+					var obj = {};
+
+					/*
+					* Server encodes json as URI
+					* Here, we decode the json part of the response here
+					*/
+
+					for(var i = 0; i < response.data.length; i ++) {
+						obj.name = response.data[i].name;
+						obj.definition = encodeURIComponent(response.data[i].definition);
+						
+						tempFormList.push(obj);
+						obj = {};
+					}
+
+					$scope.formList = tempFormList;
+					
+				});
+		};
+
+		$scope.formActions = {	
+			saveName : '',
+			save : function(name) {
+				
+				var self = this;
+
+				MyHTTP.post(INIT.CREATE_ENTRY_POINT + self.saveName, angular.toJson($scope.form)).
+					then(function(response){
+						self.saveName = '';
+						console.log(response);
+					});
+			},
+			load: function() {
+				
+				
+				console.log($scope.loadFormQ);
+				if( ( $scope.loadFormQ.hasOwnProperty('index') ) && ($scope.loadFormQ.name == $scope.loadFormQ.index.name) ) {
+					$scope.form =  JSON.parse( decodeURIComponent( $scope.loadFormQ.index.definition ));
+				} else {
+					//If index == null OR undefined because the user didn't click on the autocomplete field	
+					//Search if there is some object
+					var name = $scope.loadFormQ.name;
+					console.log($scope.formList);
+					for(var i = 0; i < $scope.formList.length; i ++) {
+						if( $scope.formList[i].name == name ) {
+							$scope.form = JSON.parse( decodeURIComponent( $scope.formList[i].definition ));
+							break;
+						} 
+					}
+				}
+
+				$scope.loadFormQ = {};
+
+			}			
+		};
+
+		/*
+		* Just dummy data
+		*/	
+		$scope.form = [
+			{
+				name : 'name',
+				type : 'text',
+				data : {
+					'label' : 'Name',
+					'value' : 'Joel'
+				}
+			}/*,{
+
+				name : 'lastName',
+				type : 'text',
+				data : {
+					'label' : 'Last name',
+					'value' : 'Cantillo'
+				}
+			},{
+				name : 'message',
+				type : 'textarea',
+				data : {
+					'label' : 'Message',
+					'value' : 'lorem Ipsum bla'
+				}
+			},{
+				name : 'city',
+				type : 'select',
+				data : {
+					'label' : 'Select a City',
+					'value' : [
+						{'label' :'Wien'},
+						{'label' : 'Buenos Aires'},
+						{'label' : 'Cartagena'}
+					],
+					'selectedValue' : '0'
+				}
+			},{
+				name : 'skills',
+				type : 'checkbox',
+				data : {
+					'label' : 'Programming Skills',
+					'value': [
+						{
+							'label' : 'PHP',
+							
+							'checked' : true
+						},{
+							'label' : 'Javascript',
+							'checked' : true
+						}
+					]
+				}
+			}*/
+
+		];
+
+
+
+		$scope.formBuilderReady = function(obj) {
+			$scope.elDefinition = obj;
+			// console.log(obj);
+		}
+
+
+		/*
+		* Communication between the sidebar elements and the 'FormBuilder Directive'
+		* It attachs the type of element into the drag event. And after a drop event, 
+		* we can read the type of element
+		*/
+		$scope.afterDrag = function(ev, ele, type) {
+			ev.dataTransfer.setData("text/plain", type);
+		}
+
+
+		getFormList();
+		
+
+	});
+});

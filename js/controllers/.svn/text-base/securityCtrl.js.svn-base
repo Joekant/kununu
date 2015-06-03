@@ -1,0 +1,268 @@
+define(['app'], function (app) {
+	"use strict";
+ 	app.register.controller('securityCtrl', function ($scope, $controller, $location, $routeParams, $sanitize, 
+ 							INIT, MyHTTP, Paginator, TempSavedData, serializeUrl) {
+ 		var self = this;
+
+ 		angular.extend(self, $controller('tileCtrl', {$scope : $scope}) );
+ 		var stepId = $routeParams.stepId;
+ 		var path = INIT.GET_ALL_USERS;
+ 		var data = {};
+ 		$scope.users = {};
+ 		$scope.groups = {};
+ 		$scope.groupsAndUsers = {};
+ 		 		
+
+ 		/*MODELS  for modal forms*/
+
+ 		$scope.init.loadData = function() {
+			
+			var self = this;
+			
+			MyHTTP.get(path).
+				then(function(result) {	
+					/*
+					* objToArray just copy the data from an object 
+					* into an array
+					*/
+					// console.log(result.data);
+					self.afterLoadData(result.data);				
+				},function(error) {
+					if(error.status == 403) $location.path("/login");
+					console.log(error);
+				});
+ 		}
+
+
+ 		//@Overdrive
+ 		$scope.init.afterLoadData = function(result) {
+ 			$scope.groupsAndUsers = result;
+ 			$scope.users = Paginator.objToArray(result.users);
+ 			data = Paginator.objToArray(result.groups);
+			$scope.newData = data;
+			$scope.init.findNumberOfPages(data);
+			$scope.init.sortData(data, 1);
+ 		}
+
+ 		/*When You click on the honeycomb, which represets the groups */
+ 		//@Overdrive
+ 		$scope.clickedTile = function(id) {
+ 			
+ 			$scope.groupHandler.edit(id);
+ 			$scope.groupHandler.getGroupList();
+ 		}
+
+ 		//@Override
+ 		$scope.pagination = function(index) {
+ 			$scope.init.sortData(data, index, INIT.MAX_ITEMS_PAGE);
+ 		};
+
+
+ 		$scope.clickedUser = function(id) {
+ 			$scope.userHandler.edit(id);
+ 			
+ 		};
+
+
+ 		/*
+		* Pass a json object in to the event,
+		* so the drop event can retrieve the data
+ 		*/
+ 		var startDrag = function(ev, obj) {
+ 			var jsonObj = angular.toJson(obj);
+			ev.dataTransfer.setData( "Text", jsonObj );
+ 		};
+
+ 		/*
+ 		* return the data (json) that has been sended
+ 		* through a startdrag event
+ 		*/
+ 		var startDropped = function(ev) {
+			return angular.fromJson( ev.dataTransfer.getData("Text") );
+ 		};
+
+ 		$scope.rmUserOrGroup = function(event, element) {
+ 			var data = startDropped(event);
+ 			if(data.hasOwnProperty("admin")) {
+ 				$scope.userHandler.rm(data.id);
+
+ 			} else if(data.hasOwnProperty("id")) {
+ 				
+ 				$scope.groupHandler.rm(data.id);
+ 			}
+ 		}
+
+ 		$scope.userHandler = {
+ 			newModel : {},
+ 			editModel : {},
+
+ 			new : function() {
+ 			
+ 			},
+ 			//Just fills the form  with the user data
+ 			edit : function(id) {
+ 				this.editModel = $scope.groupsAndUsers.users[id];
+ 				
+ 			},
+
+ 			//New User
+ 			submitNew : function(modalScope){
+ 				var path = INIT.CREATE_USER;
+ 				var param = serializeUrl(this.newModel);
+ 				MyHTTP.post(path, param).
+ 					then(function(response) {
+ 						userGroupCallback(response, modalScope);
+ 						console.log(response);
+ 					});
+ 			},
+ 			//Edit User
+ 			submitEdit : function(modalScope) {
+ 				var path = INIT.EDIT_USER;
+ 				this.editModel.userId = this.editModel.id;
+ 				var param = serializeUrl(this.editModel);
+ 				MyHTTP.post(path, param).
+ 					then(function(response) {
+ 						userGroupCallback(response, modalScope);
+ 						console.log(response);
+ 					});
+ 			},
+ 			//Logic for start drag
+ 			userToGroup : function(ev, el, obj) {
+ 				startDrag(ev, obj.user);
+ 			},
+
+ 			rm: function(id) {
+ 				var path = INIT.DEL_USER
+ 				var param = "userId=" + id;
+ 				MyHTTP.post(path, param).
+ 					then(function(response) {
+ 						userGroupCallback(response, null);
+ 						console.log(response);
+ 					});
+ 			}
+ 		};
+
+ 		$scope.groupHandler = {
+
+ 			editModel : {},
+ 			newModel : {},
+ 			userList : {},
+
+ 			new : function() {
+		 		$scope.init.loadData(path);
+ 			},
+
+ 			edit : function(id) {
+ 				this.editModel = $scope.groupsAndUsers.groups[id];
+ 			},
+
+
+ 			getGroupList : function() {
+ 				/*console.log($scope.groupsAndUsers.users);*/
+ 				this.userList = $scope.groupsAndUsers.users;
+ 				/*console.log(this.userList);*/
+
+ 				return $scope.groupsAndUsers.users;
+ 				//return $scope.groupsAndUsers.users;
+ 			},
+
+ 			submitNew : function(modalScope) {
+ 				var path = INIT.CREATE_GROUP;
+ 				var param = "groupName=" + $scope.groupHandler.newModel.create;
+ 				
+ 				MyHTTP.post(path, param).
+ 					then(function(response) {
+ 						userGroupCallback(response, modalScope);
+ 						
+ 					});
+ 			},
+
+ 			rmUserFromGroup : function(groupId, userId) {
+ 				var path = INIT.RM_USER_GROUP;
+ 				var param = "groupId=" + groupId + "&" + "userId=" + userId;
+ 				var index = this.editModel.users.indexOf(userId);
+
+				this.editModel.users.splice(index, 1);
+
+ 				MyHTTP.post(path, param).
+ 					then(function(response) {
+
+ 						$scope.init.loadData(path);
+ 						console.log(response);
+ 					});
+ 			},
+
+ 			groupRm : function(ev, el, obj) {
+ 				
+ 				var temp = {
+ 					id : obj.tile.id,
+ 					//name : obj.tile.name,
+ 					//users : []
+ 				};
+ 
+
+				ev.dataTransfer.setData( "Text", angular.toJson(temp) );
+
+ 				//startDrag(ev, el, temp);
+ 				//console.log(obj.tile);
+
+ 			},
+
+ 			userToGroup : function(ev, el, groupData) {
+ 				var user = startDropped(ev);
+ 				var path = INIT.ADD_USER_GROUP;
+ 				var param = "groupId=" + groupData.tile.id + "&userId=" + user.id;
+ 				
+ 				MyHTTP.post(path, param).
+ 					then(function(response) {
+ 						userGroupCallback(response, null);
+ 					});
+ 			},
+
+ 			submitEdit : function(modalScope) {
+ 				var path = INIT.EDIT_GROUP;
+ 				var param = "groupName=" + this.editModel.name + "&groupId=" + this.editModel.id; 	
+ 				console.log(modalScope);
+ 				
+ 				MyHTTP.post(path, param).
+ 					then(function(response) {		
+ 						userGroupCallback(response, modalScope);
+ 					});
+ 			},
+
+ 			rm : function(id) {
+ 				var path = INIT.DEL_GROUP;
+ 				var param = "groupId=" + id;
+ 				MyHTTP.post(path , param).
+ 					then(function(response) {
+				 		$scope.init.loadData(path);
+				 		userGroupCallback(response, null);
+ 						console.log(response);
+ 					});
+ 			}
+ 		};
+
+ 		/*
+ 		* Handles what happens after an ajax call
+ 		* if success : display msg and close the modal
+ 		* if fails : display msg
+ 		* after that we call again to the server to get more data
+ 		*/
+ 		var userGroupCallback = function(result, modalScope) {
+
+ 			if(result.data.success) {
+				$scope.showAlertBox(result.data.message, "success");
+				if(modalScope != undefined) modalScope.closeModal();
+				$scope.init.loadData(path);	
+			} else {
+				$scope.showAlertBox(result.data.message,"false");
+			}
+
+			result = null;
+ 			modalScope = null;
+ 		}
+
+ 		$scope.init.loadData(path);
+
+ 	});
+ });

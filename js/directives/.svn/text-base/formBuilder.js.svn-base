@@ -1,0 +1,457 @@
+define(['app'], function(app) {
+	'use strict';
+	
+	/*
+	* Form definition Container
+	*/
+	app.register.directive('formDefinition',function() {
+		/*
+		* 	TEMPORARY : I'm gonna hardcode the tool-bar html reference here,
+		*  	Ideally could be better if this directive get that info from the controller
+		*  	by dependency Injection
+		*/
+		var toolbarId = 'tool-bar';
+		var toolbarRef;
+		var staticNameCounter = 0;
+		
+		return {
+			restrict : 'E',
+			scope : {
+				callbackFunction : '=',
+				form : "="
+			},
+			template : '<ul class="form-builder-container" style="margin-left:0px" dropping="afterDrop($event, $element)">\
+							<li ng-repeat="ele in form"><comp-def callback-function="childCallback" data="ele"></comp-def></li>\
+							<ul class="form-action-buttons clear-group">\
+      							<li><a call-modal="save-form-modal" href class="alt-button">Save</a></li>\
+      							<li><a call-modal="load-form-modal" href class="alt-button">Load</a></li>\
+    						</ul>\
+						</ul>',
+			link : function(scope, element, attr) {
+				
+				var newElType = "";
+				
+				scope.afterDrop = function(ev, el) {
+					newElType = ev.dataTransfer.getData("Text");
+					addNewElement(newElType);
+				};
+
+				var addNewElement = function(type) {
+					var obj = {
+						'name' : 'newelement' + staticNameCounter,
+						'type' : type,
+						'data' : {
+							'label' : 'New Element',
+							//'value' : 'Click here to setup this element :)'
+						}
+					};
+
+					if(type == 'select' || type == 'checkbox') {
+						obj.data.value = [];
+					} else {
+						obj.data.value = 'Click here to setup this element :)';
+					}
+
+					staticNameCounter ++;
+					scope.form.push(obj);
+				};
+
+
+				scope.childCallback = function(childDataObj) {
+					scope.callbackFunction(childDataObj);
+					toolbarRef = angular.element(document.getElementById(toolbarId));
+					
+					
+					toolbarRef.css({
+						'display' : 'block',
+						'opacity' : '1'
+					});
+				};
+
+			}
+
+		};
+
+	});
+
+	app.register.directive('compDef', function($compile) {
+		
+		var templates = {
+			'text' : '<input-impl callback-function="callbackFunction" data="data"></input-impl>',
+			'textarea' : '<textarea-impl callback-function="callbackFunction" data="data"></textarea-impl>',
+			'select' : '<select-impl callback-function="callbackFunction" data="data"></select-impl>',
+			'checkbox' : '<checkbox-impl callback-function="callbackFunction" data="data"></checkbox-impl>'
+		};
+
+		return {
+			restrict : 'E',
+			scope : {
+				data : '=',
+				callbackFunction : '='
+			},
+			template : '<div></div>',
+
+			link : function(scope, ele, attr) {
+				var temp = '';
+				//console.log(scope.data);
+				switch(scope.data.type) {
+					case 'text' :
+						temp = templates.text;
+					break;
+					case 'textarea' :
+						temp = templates.textarea;
+					break;
+					case 'select' :
+						temp = templates.select;
+					break;
+					case 'checkbox' :
+						temp = templates.checkbox;
+					break;
+				}
+
+				if(temp !== '') {
+					var compiled = $compile(temp)(scope);
+					angular.element(ele).append(compiled);
+				}
+
+				/*scope.compDefCallback = function(obj) {
+					scope.callbackFunction(obj);
+				}*/
+
+			}
+		};
+	});
+
+	/*
+	* 	Following directives represent the bussines logic of 
+	*	every single element like input text, textarea, etc
+	*   Each element should get injected by a 'data' scope
+	*/
+	
+	app.register.directive('inputImpl', function() {
+		
+		return {
+			restrict : 'E',
+			scope : {
+				data : '=',
+				callbackFunction : '='
+			},
+			template : '<label> {{data.data.label}}\
+							<input readonly ng-focus="focus()" ng-model="data.data.value" type="{{data.type}}" />\
+						</label>',
+			link : function(scope, element, attr) {
+				
+				scope.focus = function() {
+					//scope.$parent.compDefCallback(scope.data);
+					scope.callbackFunction(scope.data);
+				}
+				
+			}
+		};
+	});
+
+	//TODO: textarea height CSS rule --> SCSS
+	app.register.directive('textareaImpl', function() {
+		return {
+			restrict : 'E',
+			scope : {
+				data : '=',
+				callbackFunction : '='
+			},
+			template : '<label>{{data.data.label}}\
+							<textarea readonly class="form-textarea" ng-focus="focus()" ng-model="data.data.value"></textarea>\
+						</label>',
+			link : function(scope, element, attr) {
+				scope.focus = function() {
+					scope.callbackFunction(scope.data);
+				}
+			}
+		};
+	});
+
+	/*
+	* Selectbox definition
+	* Ng-option is bugged!.. double binding is not working
+	* Don't forget to report to angular repositorie
+	*/
+	app.register.directive('selectImpl', function() {
+		return {
+			restrict : 'E',
+			scope : {
+				data : "=",
+				callbackFunction : '='
+			},
+			template : '<label>{{data.data.label}}\
+							<select readonly ng-focus="focus()" ng-model="data.data.selectedValue">\
+								<option disabled ng-repeat="val in data.data.value" value="{{$index}}" >{{val.label}}</option>\
+							</select>\
+						</label>',
+			link : function(scope, element, attr) {
+				scope.focus = function() {
+					
+					scope.callbackFunction(scope.data);
+				}
+			}
+		}
+	});
+
+	/*
+	* Checkbox definition
+	*/ 
+
+	//TODO: H6 CSS rule --> SCSS
+	app.register.directive('checkboxImpl', function() {
+		return {
+			restrict : 'E',
+			scope : {
+				data : "=",
+				callbackFunction : "="
+			},
+			template : '<div ng-click="focus()"><h6 style="color:#5E5E5E">{{data.data.label}}</h6>\
+							<label ng-repeat="ele in data.data.value" >\
+								<input onclick="return false;" ng-model="ele.checked" type="checkbox"  />{{ele.label}}\
+							</label>\
+						<div>',
+			
+			link : function(scope, element, attr) {
+				scope.focus = function() {
+					
+					scope.callbackFunction(scope.data);
+				}
+			}
+		} 
+	});
+
+	/*
+	* This directive handles the whole process definition of the form
+	* It waits for the data to be inyected from outside, then it 
+	* add in the last-li the definition type, and finally recompile the template
+	*/
+	app.register.directive('elementDef', function($compile, $timeout) {
+		
+		var templates = { 
+			'text' : '<input-def data="data.data"></input-def>',
+			'textarea' : '<textarea-def data="data.data"></textarea-def>',
+			'select' : '<select-def data="data.data"></select-def>',
+			'checkbox' : '<checkbox-def data="data.data"></checkbox-def>'
+		};
+		
+		var toolbarValue = "tool-bar-value";
+
+		return {
+			restrict : "E",
+			scope : {
+				data : "=",
+				callbackObj : "="
+			},
+			template : '<div class="form-builder" id="tool-bar">\
+							<a ng-click="closeToolbar()" class="tool-close" href>×</a>\
+							<ul >\
+								<li  style="margin-bottom:30px"><h4>ELEMENT DEFINITION</h4><a dropping="deleteValueElement($event, $element)" href="">Delete</a></li>\
+								<li>\
+									<label>Name <input ng-model="data.name" placeholder="Names should be unique" type="text"> </label>\
+								</li>\
+								<li>\
+									<label>Label<input ng-model="data.data.label" placeholder="" type="text"></label>\
+								</li>\
+								<li id="tool-bar-value"></li>\
+							</ul>\
+						</div>',
+			
+			link : function(scope, element, attr) {				
+				var li, dynLi, compiled, deletedIndex;
+
+				/*
+				* Following Observer  decides which definition should be display
+				*/
+				scope.$watch('data.type', function(newVal, oldVal) {
+					if( (scope.data.hasOwnProperty('name')) && (newVal != undefined) ) {
+						//console.log("newVal = " + newVal, "oldVal = " + oldVal);
+						setupDefinition(newVal);
+
+					}
+				}, true);
+
+				var setupDefinition = function(type) {
+					dynLi = angular.element(document.getElementById(toolbarValue));
+
+					dynLi.empty();
+					
+					compiled = $compile(templates[type])(scope);
+					dynLi.append(compiled);
+
+				};
+				
+				scope.deleteValueElement = function(ev, el) {
+					deletedIndex = ev.dataTransfer.getData("Text");
+					scope.data.data.value.splice( parseInt(deletedIndex), 1);
+				};
+
+				scope.closeToolbar = function() {
+					element.find('div').eq(0).css({
+						"display" : "none",
+						"opacity" : "0",
+					});
+				};
+			}
+		};
+	});
+
+	app.register.directive('inputDef', function() {
+		
+		return {
+			restrict : 'E',
+			scope : {
+				data : "="
+			},
+			template : '<label>Value\
+							<input type="text" ng-model="data.value" />\
+						</label>',
+			link : function(scope, element, attr) {
+				/*scope.$watch(function(){
+					console.log(scope.data);
+				});*/
+			}	
+		};
+		
+	});
+
+	app.register.directive('textareaDef', function() {
+		return {
+			restrict : 'E',
+			scope : {
+				data : "="
+			},
+			template : '<label>Value\
+							<textarea class="form-textarea" ng-model="data.value"></textarea>\
+						</label>',
+		}
+	});
+
+	/*
+	* This fucking directive !!! 
+	*
+	*/
+
+	app.register.directive('selectDef', function() {
+		return {
+			restrict : 'E',
+			scope : {
+				data : "="
+			},
+			//<label>Checked<input ng-click="setSelectedValue($event, $index)" value="{{$index}}" type="checkbox" /></label>\
+			template : '<ul class="toolbar-multi">\
+							<li ng-repeat="ele in data.value">\
+								<label><a draggable="true" href="" dragging="dragToDelete($event, $element,$index)">Value</a> <input ng-model="ele.label" type="text" /></label>\
+								<label><input ng-model="checkboxModels[$index]" ng-click="updateCheckbox($index)" value="{{$index}}" type="checkbox" /></label>\
+							</li>\
+						</ul>\
+						<br class="end" />\
+						<a class="add-button" ng-click="addNewElement()">Add</a>',
+
+			link : function(scope, element, attr) {
+				
+				var index, selected, checkboxTemp;
+				var checkbox = [];
+				var firstTime = false;
+				scope.checkboxModels = [];
+				/*
+				* The following watch, executes a function
+				* once we injected the scope from outside for the first time
+				*/
+				scope.$watch('data', function(){
+					
+					if( scope.data != undefined && firstTime === false ) {
+						firstTime = true;
+						setupCheckbox();
+						
+					} else if( scope.data == undefined ) {
+						firstTime = false;
+					}
+				
+				}, true); 
+
+				element.on('$destroy', function() {
+					scope.$$watchers = [];
+				});
+				
+				/*
+				* This function idetifies all checkboxes
+				* and it marks the selectedValue
+				* selectedValue is injected from outside and is a number	
+				*/
+				var setupCheckbox = function() {
+					scope.checkboxModels = [];
+					for(var n = 0; n < scope.data.value.length; n ++) {
+						if( scope.data.selectedValue == n.toString() )	{
+							scope.checkboxModels.push(true);
+						}else {
+							scope.checkboxModels.push(false);
+						}
+					}
+				};
+
+
+				scope.updateCheckbox = function(index) {
+					checkboxTemp = scope.data.selectedValue;
+					scope.checkboxModels[checkboxTemp] = false;
+
+					scope.checkboxModels[index] = true;
+					scope.data.selectedValue = index;	
+				};
+
+				scope.addNewElement = function() {
+					var obj = {'label' : 'New element' };
+					scope.data.value.push(obj);
+					scope.checkboxModels.push(false);
+					
+				};
+
+				scope.dragToDelete = function(ev, el, index) {
+					ev.dataTransfer.setData("Text", index.toString());
+				}
+
+
+
+			} //Link
+		};
+	});
+
+	app.register.directive('checkboxDef', function() {
+		return {
+			restrict : 'E',
+			scope : {
+				data : "="
+			},
+			template : '<ul class="toolbar-multi">\
+							<li ng-repeat="ele in data.value">\
+								<label><a draggable="true" dragging="dragToDelete($event, $element, $index)" href="" >Value</a> <input ng-model="ele.label"  type="text" /></label>\
+								<label><input ng-model="ele.checked" type="checkbox" /></label>\
+							</li>\
+						</ul>\
+						<br class="end" />\
+						<a class="add-button" ng-click="addNewElement()">Add</a>',
+
+			link : function(scope, element, attr) {
+				var obj = {};
+				
+				scope.addNewElement = function() {
+					obj = {'label' : 'New', 'checked' : false};
+					scope.data.value.push(obj);
+				};
+
+				element.on("$destroy", function() {
+					scope.$$watchers = [];
+				});
+
+				scope.dragToDelete = function(ev, el, index) {
+					ev.dataTransfer.setData("text", index.toString());
+					
+				}
+
+				
+			}
+		};
+	});
+
+});

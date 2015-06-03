@@ -1,0 +1,57 @@
+define(['app'], function (app) {
+	"use strict";
+ 	app.register.controller('myTasksCtrl', function ($scope, $controller,$routeParams, $location, INIT, MyHTTP, Paginator, TempSavedData) {
+ 		
+ 		var listView = false;
+
+ 		if($routeParams.$$path == "/mytasks-list") listView = true;
+
+ 		var self = this;
+ 		var data = {};
+ 		var hugeData = {};
+
+
+ 		angular.extend(self, $controller('tileCtrl', {$scope : $scope}) );
+
+ 		$scope.lightboxDirective(true,true);
+
+ 		var path = INIT.GET_TASKS;
+ 		
+ 		var setCurrentSteps = function(tempData) {
+ 			var temp = [];
+
+ 			var len = tempData.length;
+ 			
+ 			for(var n = 0 ; n < len; n ++) {
+ 				temp.push(tempData[n].instances[0]);
+ 			}
+ 			
+ 			return temp;
+
+ 		}
+ 		
+ 		//@Overdrive
+ 		$scope.init.afterLoadData = function(result) {
+            $scope.lightboxDirective(false,false);
+ 			data = setCurrentSteps(result.executives);
+			$scope.newData = data;	
+ 			if(!listView) {
+ 				$scope.init.findNumberOfPages(data);
+				$scope.init.sortData(data, 1);	
+ 			} 			
+ 			
+ 		}
+
+ 		//@Overdrive
+ 		$scope.clickedTile = function(id) {
+ 			$location.path("/mytasks/" + id);
+ 		}
+
+ 		$scope.pagination = function(index) {
+ 			$scope.init.sortData(data, index, INIT.MAX_ITEMS_PAGE);
+ 		}
+ 		
+ 		$scope.init.loadDataPost(path,INIT.FULL_RESPONSE_OBJ);
+
+    });
+});

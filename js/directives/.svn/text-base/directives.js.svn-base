@@ -1,0 +1,1021 @@
+define(['app'], function (app) {
+'use strict';
+	
+	app.directive('maxHeight' , function($timeout) {
+		var headerSize = 75;
+		var wrapper = ".wrapper";
+
+		return {
+			/*scope : true,*/
+			link : function(scope, element, attr) {
+				var myHeight = document.querySelector(wrapper);				
+				element.css("height", myHeight.offsetHeight + "px");
+			}
+		};
+	});
+
+	app.directive('username', function(CurrentUser, $timeout) {
+		return {
+			link : function(scope, element, attr) {
+				
+				CurrentUser.retrieveUser();
+				$timeout(function() {
+					scope.name  = CurrentUser.getUser().name;
+				},20)
+				
+				scope.$on('$routeChangeStart', function(next, current) { 
+   					CurrentUser.getUser();
+   					scope.name = CurrentUser.getUser().name;
+ 				});
+			}
+		};
+	});
+
+
+
+	app.directive('onlogin', function() {
+
+		return {
+			link : function(scope, element, attr) {
+				var navmenu = angular.element(document.getElementById("nav-menu-container"));
+				var header = angular.element(document.getElementById("header"));
+
+
+
+				var dissapearElements = function() {
+					navmenu.css({
+						'visibility' : 'hidden',
+						'display' : 'none'
+					});
+
+					header.css({
+						'visibility' : 'hidden',
+						'display' : 'none'
+					});	
+				};
+
+				var appearElements = function() {
+					navmenu.css({
+						'visibility' : 'visible',
+						'display' : 'block'
+					});
+
+					header.css({
+						'visibility' : 'visible',
+						'display' : 'block'
+					});		
+				};
+
+				dissapearElements();
+			
+				scope.$on('$routeChangeStart', function(next, current) { 
+   					
+   					if(current.loadTemplateUrl != "views/loginView.html") {
+   						appearElements();
+   					}
+ 				});
+			}
+		};
+	});
+	
+	app.directive('navMenu', function($location, $timeout) {
+		
+		return {
+			
+			link : function(scope, element, attr) {
+				var actualNav, h6, span;
+				var defaultColor = "#B7B6B6";
+
+				/*
+				* Somehow browser takes 3ms to process this, 
+				* 10ms should be fine
+				*/
+				$timeout(function() {
+					span = element.find("span");
+					h6 = element.find("h6");
+				},10)
+
+				//Set the color on the clicked menu item
+				var setActualNav = function(index) {
+					
+					span.eq(actualNav).css("color", defaultColor);
+					h6.eq(actualNav).css("color", defaultColor);
+
+					span.eq(index).css("color", scope.navEl[index].color );
+					h6.eq(index).css("color", scope.navEl[index].color );
+					actualNav = index;
+				};
+
+				scope.navEl = [
+					{'title' : 'workflow', 'route' : '/myworkflow/', 'img' : 'icon-new_i', 'color' : '#fec10d' },
+					{'title' : 'groups', 'route' : '/groups/', 'img' : 'icon-my_i', 'color' : '#00b095' },
+					{'title' : 'mytasks', 'route' : '/mytasks/', 'img' : 'icon-task_i', 'color' : '#9e9dbf' },
+					{'title' : 'security', 'route' : '/security/', 'img' : 'icon-profile_i', 'color' : '#f05a5b' },
+				];
+
+				scope.goTo = function(name, index) {
+					setActualNav(index);
+					$location.path(scope.navEl[index].route);
+				};
+
+	
+				/*Select the right nav once you open/reload the app*/
+				for(var k = 0; k < scope.navEl.length; k ++) {
+					// console.log(scope.navEl[k].route , $location.path() );
+					/*if(scope.navEl[k].route == $location.path()) {
+						console.log("h");
+						setActualNav(k);
+						break;
+					}*/
+				}
+
+			}
+		};
+	});
+
+
+	app.directive('centerelement', function(INIT, $window, $document) {
+  
+		var relocate = function(element) {
+			var width = $window.innerWidth || $document[0].documentElement.clientWidth || $document[0].body.clientWidth;
+			var height = $window.innerHeight || $document[0].documentElement.clientHeight || $document[0].body.clientHeight;
+			var innerHeight = height / 2;
+			var innerWidth = width / 2;
+	    
+			var boxWidth = element[0].clientWidth ;
+			var boxHeight = element[0].clientHeight;
+	    
+	    	element.css({
+				'left' : innerWidth + "px",
+				'margin-left' : (- (boxWidth / 2) ) + "px",
+				'top' : innerHeight + "px",
+				'margin-top' : (- (boxHeight / 2) ) + "px"
+	    	});
+  		}
+
+  		return  {
+    		replace: false,
+    		transclude: false,
+
+    		link : function(scope, element, attr) {
+      
+      			relocate(element);
+      			angular.element($window).bind('resize', function(){
+        			relocate(element);
+      			});
+
+    		}
+  		}		
+	});
+
+
+	app.directive('pagination', function() {
+
+		return  {
+			restrict : 'E',
+			scope : {
+				callbackFunction  : '=',
+				numberOfPages : '=',
+				clickme : '&'
+			},
+			template : '<ul class="my-pagination">\
+							<li ng-click="onClickPageIndex($index)" ng-repeat="page in repeatRange(numberOfPages) track by $index">{{$index+1}}</li>\
+						</ul>',
+
+			link : function(scope, element, attr) {
+	 			var selectedLi = element.find("li").eq(0);
+				selectedLi.addClass("actual");
+				
+				scope.numberOfPages=0;  
+
+				scope.onClickPageIndex = function(index) {
+					scope.callbackFunction(index + 1);
+					//Remove .actual to the previous selected item
+					selectedLi.removeClass("actual");
+					
+					//Rewrite the variable with the new value (selected item)
+					selectedLi = element.find("li").eq(index);
+					selectedLi.addClass("actual");
+					
+				}
+
+				scope.repeatRange = function(n) {
+					return new Array(n);
+				};
+			}
+		}
+	});
+
+	app.directive('placeholder', function($timeout){
+  		var i = document.createElement('input');
+
+  		if ('placeholder' in i) {
+      		return {}
+  		}
+  		return {
+
+      	link: function(scope, elm, attrs){
+          
+          if (attrs.type === 'password') {
+              return;
+          }
+          $timeout(function(){
+              elm.val(attrs.placeholder);
+              elm.bind('focus', function(){
+                  if (elm.val() == attrs.placeholder) {
+                      elm.val('');
+                  }
+              }).bind('blur', function(){
+                  if (elm.val() == '') {
+                      elm.val(attrs.placeholder);
+                  }
+              });
+          });
+      }
+  }
+});
+
+	app.directive('mainmenu', function($timeout, MyHTTP, INIT) {
+		
+		return {
+			link : function(scope, element, attr) {
+
+				var dropdown = element.find("ul");
+				var button = element.find("img");
+
+			 	var body = angular.element(document.getElementsByTagName("body")[0]);
+				
+				button.bind('click', function() {
+
+					dropdown.css('display','block');
+					
+					//Timeout, so js doesn't do this in the async way
+					$timeout(function() {
+						body.bind('click' , function() {
+							hideDropdown();
+						});
+					});
+
+				});
+				
+				var hideDropdown = function() {
+					
+					dropdown.css('display','none');
+
+					//Timeout, so js doesn't do this in the async way
+					$timeout(function() {
+						body.unbind("click");
+					});
+					
+				}
+
+				scope.logout = function() {
+					MyHTTP.post(INIT.LOGOUT_PATH).
+						then(function(response){
+							console.log(response);
+							window.location.href="login.wsd"
+							
+						});
+				}
+
+			}
+		}
+	});
+
+	app.directive('navigation-menu', function() {
+		
+		return {
+
+			
+		}
+		
+	});
+
+	app.directive('lightbox', function() {
+
+        return {
+            link : function(scope, element, attr) {
+                var lightbox = element;
+                var spinner = angular.element(element[0].querySelector("#spinner"));
+
+                scope.lightbox = function(show, hasSpinner) {
+
+                    if(show === true) {
+                        lightbox.css("visibility", "visible");
+
+                        if(hasSpinner === true) spinner.css("visibility", "visible");
+
+                    } else if (show === false) {
+                        lightbox.css("visibility", "hidden");
+                        if(hasSpinner === false) spinner.css("visibility", "hidden");
+                    }
+                };
+
+            }
+        };
+    });
+
+	/*
+	* if click, opens a modal
+	*/
+	app.directive('callModal', function() {
+		var lightbox = angular.element(document.getElementById("lightbox"));
+		return {
+			link : function(scope, element, attr) {
+				var modal;
+
+				element.bind("click", function() {
+					modal = angular.element(document.getElementById(attr.callModal));		
+					lightbox.css("visibility", "visible");
+					modal.css({
+						"display" : "block",
+						"visibility" : "visible"
+					});
+				});
+			}
+		};
+	});
+
+	/*app.directive('testo', function() {
+		return {
+			controllerAs: 'controller',
+			controller : function($scope) {
+				$scope.hi = function() {
+					console.log("im a test");
+				}
+				console.log($scope);
+			},
+			link: function(scope) {
+				
+				
+
+			}
+		}
+	});*/
+
+
+	app.directive('alertbox', function($timeout) {
+
+		return {
+			restrict : "A",
+
+			link : function(scope, element, attr) {
+
+				var close = element.find("a");
+				var msg = element.find("span");
+				
+				scope.showAlertBox = function(msj, type) {
+					msg[0].innerHTML = msj;
+
+					if(type === "success") element.removeClass("alert");
+					else element.addClass("alert");
+					
+
+					element.css("opacity", "1");
+					
+					$timeout(function() {
+						scope.closeAlertBox();
+					},2000);
+				}
+
+				scope.closeAlertBox = function() {
+					element.css("opacity", "0");
+					console.log(element);
+				}
+
+				close.bind("click", function(e) {
+					e.preventDefault();
+					element.css("opacity", "0");
+				});
+				
+
+			}
+
+		}
+
+	});
+
+
+	app.directive('myModal', function($compile,$timeout) {
+		
+		var lightbox = angular.element(document.getElementById("lightbox"));
+		var closeTag = ".close-reveal-modal";
+		return {
+			restrict : "E",
+			scope : {
+				'formData' : '=formData',
+			},
+
+			compile : function compile(tElement,scope, tAttrs, transclude) {
+				
+				/*var self = this;
+				console.log(this);
+				this.link(scope, tElement, tAttrs);*/
+               	
+				var recompiledTemplate = scope.$$element[0].innerHTML;
+				
+				/*
+				Remove non-bindeable
+				*/
+				var rmNonBindeable = function(text) {
+					var s = 'ng-non-bindable=""';
+					return text.replace(s, '');
+				}
+				
+				return {
+					pre : function(scope, element, iAttrs, controller) {
+					},
+					post : function(scope, element, attr, controller) {
+						var alertBox = angular.element(element[0].querySelector('alert-box'));
+						var modal = element.find("div").eq(0);
+
+						
+						if(attr.isolated != undefined && attr.isolated == "true") {
+							/*var tmpScope = scope.$new();
+							console.log(tmpScope);*/
+
+							/*var content = $compile(recompiledTemplate)(tmpScope);
+							element[0].removeChild(modal[0]);*/
+
+							//;
+
+							var compiled = $compile(rmNonBindeable(recompiledTemplate))(scope);
+							element[0].removeChild(modal[0]);
+							
+							element.append(compiled);
+							modal = element.find("div").eq(0);
+						}
+
+						var close = angular.element(element[0].querySelector(closeTag));
+
+						close.bind("click" , function(e) {
+							e.preventDefault();
+							scope.closeModal();
+						})
+
+						scope.closeModal = function() {
+							lightbox.css("visibility","hidden");
+							
+							modal.css({
+								"display" : "none",
+								"visibility" : "hidden"
+							});
+						};
+
+						
+					}
+				};
+			
+			},
+
+		};
+	});
+
+	// Easy Accordion
+	app.directive('easyaccordion', function() {
+		return  {
+			replace: false,
+			transclude: false,
+			
+			scope : 'isolate',
+
+			link : function(scope, element, attr) {
+				//Prevent Default
+				scope.easyaccordion = function(e) {
+					// e.preventDefault();
+					var pointer = angular.element(e.srcElement);
+					var parent = angular.element( pointer[0].parentNode );
+					// console.log(pointer);
+					var el = angular.element(parent).find("div").eq(0);
+					if( el.css( "display" ) == "none" ) el.css( "display", "block" );
+					else el.css( "display", "none" );
+				}
+			},
+		};
+	});
+
+	app.directive('dropping', function($parse) {
+
+		return  {
+			replace: false,
+			transclude: false,
+
+			link : function(scope, element, attr) {
+				element.bind('dragover',function(event){
+					event.preventDefault();
+					event.stopPropagation();
+
+				});
+
+				element.bind('dragenter', function(event) {
+					event.preventDefault();
+					event.stopPropagation();
+				//element.css("background-color","red");
+				});
+
+				element.bind('dragleave', function(event) {
+					event.preventDefault();
+					event.stopPropagation();
+					//element.css("background-color","white");
+				});
+
+				var invoker = $parse(attr.dropping);
+
+				element.bind('drop', function(event){
+					//element.css("background-color","white");
+					event.preventDefault();
+					event.stopPropagation();
+					scope.$apply(function(){
+					  invoker(scope, { $event : event, $element : element });
+					});
+
+				});
+			}
+		};
+	});
+
+	app.directive('dropover' , function($parse) {
+	  	return {
+		    link : function(scope, element, attr) {
+		    	var invoker = $parse(attr.dropover);
+
+		      	element.bind('dragenter', function(event) {
+
+			        event.preventDefault();
+			        event.stopPropagation();
+			        scope.$apply(function(){
+			        	invoker(scope, { $event : event, $element : element });
+		        	});
+		      	});
+		    }
+	  	};
+	});
+
+	app.directive('dragging', function($parse) {
+
+		return  {
+			// scope : true,
+	
+			link : function(scope, element, attr) {
+
+				var invoker = $parse(attr.dragging);
+
+			  	element.bind('dragstart', function(event){
+					event.stopPropagation();
+					scope.$apply(function(){
+				  		invoker(scope, { $event : event, $element : element });
+					});
+			   
+			  	});
+
+			  	element.bind('dragend', function(event){
+					event.stopPropagation();
+					event.preventDefault();
+				
+					scope.$apply(function(){
+					  	invoker(scope, { $event : event, $element : element });
+					});
+			  	});      
+			}
+
+		};
+
+	});
+
+	/*
+	* EDIT: q should be an object with 2 properties inside!!
+	* This directive receives as parameters item = Number of items
+	* and q, an object who contains the search value and an index(not necessary)
+	* The funny thing about this directive is, you need to select an element via click
+	* so you can get an index, if you don't click, you will get the string what the user enters, but as I said without 
+	* the selected element index.
+	* Solution : If the index object is null, you will have to search into the list of element array and see if the value exists,
+	* 
+	*/
+
+	app.directive('autocomplete', function($timeout,$document) {
+		return {
+			restrict : 'E',
+			
+			scope : {
+				'items' : '=',
+				'q' : '=',
+				'callback' : '='
+			},
+			template : '<div class="autocomplete">\
+							<input type="text"  ng-blur="onBlur($event)" ng-focus="onFocus($event)" ng-model="q.name" />\
+							<ul >\
+								<li ng-click="autoClick($event,$index, item)"\
+									ng-repeat="item in items | filter:autoCompleteFilter | limitTo:300">{{item.name}}\
+								</li>\
+							</ul>\
+						</div>',
+			link : function(scope, element, attr) {
+				var ul;
+				var open = false;
+				var ulFirstSearch = false;
+				var outSideClickEvent;
+				var input = element.find("input");
+				//just to avoid the reallocation
+				var temp= "";
+								
+				scope.q = {};
+				scope.q.name="";
+				/*scope.q.index = {};*/
+
+				var clickOutsideAutocomplete = function() {
+					var nodeParent;
+					var autocomplete = element.find("div").eq(0);
+
+					
+					outSideClickEvent = $document.bind("click", function(ev) {
+						nodeParent = ev.target.parentNode;
+						if( nodeParent == null ) return;
+						
+						if( ( nodeParent.isEqualNode(autocomplete[0]) ) ) {
+						
+						} else {
+							ul.css({
+								'visibility' : 'hidden',
+								'display' : 'none'
+							});	
+							
+						}
+					});
+
+				};
+
+				if(attr.message != undefined) input.attr("placeholder", attr.message);
+
+				scope.autoClick = function(ev,index, item) {
+					
+
+					scope.q.name = item.name;
+					scope.q.index = item;
+
+					if(scope.callback != undefined) {
+						scope.callback.selected();
+					}
+
+					
+				};
+
+				scope.onFocus = function(ev) {
+					
+					
+					if(!ulFirstSearch) {
+						ul = element.find("ul");
+
+						clickOutsideAutocomplete();
+						ulFirstSearch = true;	
+					}					
+					
+					ul.css({
+						'visibility' : 'visible',
+						'display' : 'block'
+					});
+
+					open = true;
+					
+				};
+
+				scope.onBlur = function(ev) {					
+					
+					/*if(!open) {
+						ul.css({
+							'visibility' : 'hidden',
+							'display' : 'none'
+						});	
+					}*/
+
+					//open = false;
+					//console.log(ev);
+				}
+
+				scope.autoCompleteFilter = function(data) {
+        			
+        			temp = new RegExp(scope.q.name,"ig")
+        			return data.name.match(temp);
+    			};
+
+    			
+
+    			element.on("$detroy", function() {
+    				outSideClickEvent.unbind("click");
+    			});
+			
+
+			} // END LINK
+		}
+	});
+
+	app.directive('logout', function(INIT, MyHTTP, $route){
+		return {
+
+			link : function(scope) {
+
+				scope.logout = function() {
+					MyHTTP.post(INIT.LOGOUT_PATH).
+						then(function(response){
+							console.log(response);
+							window.location.href="login.wsd"
+							
+						});
+				}
+
+			}
+		}
+	});
+
+	app.directive('asd', function() {
+
+		return {
+			
+			link : function(scope, element, attr) {
+
+				console.log(element);
+
+
+			}
+
+		};
+
+	});
+
+
+	app.directive('uploadme', function(INIT, $timeout, $log) {
+
+	  return  {
+	    replace: false,
+	    transclude: false,
+	  
+
+	    link : function(scope, element, attr) {
+	  
+	      scope.uploadedFiles = [];
+
+	      scope.onchanges = function(el) {
+	        //Get the input upload file name
+
+	        //Initialize the Iframe and proceed to upload the files
+	        var instancia = new Iframes(el, scope.uploadmeHelper);
+	        instancia.setIframe();
+
+	        return false;
+	      }
+
+	      scope.getEle = function() {
+	        return element;
+	      }
+
+	      /*Iframe Class*/    
+	      var Iframes = (function() {
+	        
+	        //Constructor
+	        function Iframes(el, uploadmeHelper) {
+	          
+	          this.elParent = el.parentNode;
+	          this.elValue= el;
+	          this.uploadmeHelper = uploadmeHelper;
+
+	          return this;
+
+	        }
+
+	        Iframes.prototype.setIframe = function() {
+	          //Creating
+	          var nocache = "Iframe" + ( new Date().getTime() );
+	          var iframe = document.createElement("iframe");
+	          iframe.setAttribute("id", nocache );
+	          iframe.setAttribute("name", nocache);
+	          iframe.setAttribute("width", "400");
+	          iframe.setAttribute("height", "400");
+	          iframe.setAttribute("border", "0");
+	          iframe.setAttribute("style", "width: 0; height: 0; border: none; display:block  ")
+	          
+	          //Setting some atttibutes to the form
+	          var clonedForm = this.elValue.cloneNode(true)
+	          var form = this.elValue;
+	          
+	          form.setAttribute("target",nocache);
+	          //Append the cloned form where it should suppose to be
+	          this.elParent.appendChild(clonedForm);
+	          
+	          // Draw the iframe
+	          this.drawIframe(iframe, form);
+	          return this;
+	        
+	        }
+
+	        /*
+	        * Include the uploaded object into the scope list
+	        * @param result json object
+	        */
+	        Iframes.prototype.setUploadedFile = function(result) {
+	          var newResult = JSON.parse(result);
+	          var obj = {
+	            id : newResult.documents[0].id ,
+	            name : newResult.documents[0].name   
+	          }
+	          //Push the uploaded file object to the scope
+	          scope.$apply(function(){
+	            scope.uploadedFiles.push( obj );
+	          });
+	        },
+
+	        //Delete the Iframe, desattaching the events as well
+	        //@param iframe html object 
+	        Iframes.prototype.deleteIframe = function(iframe) {
+	          angular.element(iframe).remove();
+	        },
+
+	        Iframes.prototype.afterLoad = function(iframe) {
+	          var self = this;
+	          var iframeBody = this.getIframe(iframe);
+	                  
+	          this.setUploadedFile( iframeBody.text() );
+	          this.deleteIframe( iframe );
+	        },
+
+	        Iframes.prototype.getIframe = function(iframe) {
+	          var iframeDoc = iframe.contentWindow.document || iframe.contentDocument ;
+	          return angular.element(iframeDoc).find("body");
+	        },
+
+	        /*
+	        * We draw here the Iframe. We attached the load event
+	        * @param iframe html object, form html object
+	        */
+	        Iframes.prototype.drawIframe = function(iframe, form) {
+	          var self = this;        
+
+	          this.elParent.appendChild(iframe);
+
+	          angular.element(iframe).bind("load", function(e) {
+	            self.afterLoad(this);
+	          });
+
+	          $timeout(function(){
+	            var iframeBody =  self.getIframe(iframe);
+	            iframeBody.append(form); 
+	            form.submit(); 
+	          },10);       
+	          
+	        }
+
+	        return Iframes;
+	      
+	      })();
+
+	    } /*End Link*/
+	  }; /*End Return*/
+	}); /*End Directive*/
+	
+	app.directive('multicomplete', function($timeout) {
+		
+		return {
+
+			restrict : "E",
+			scope : {
+				'items' : "=",
+				'q' : "=",
+				//'msg' : 
+			},
+			//<input type="text" ng-model="textModel">\
+			template : '<div class="multicomplete">\
+      						<div class="inner">\
+      							<div class="completed">\
+      								<span ng-repeat="el in q track by $index">{{el}}</span>\
+      							</div>\
+        						<autocomplete callback="callback" q="temp" items="items"></autocomplete>\
+        						<br class="end"> \
+      						</div>\
+    					</div>',
+			
+			link : function(scope, element, attr) {
+				var multicomplete = element.find("div").eq(0);
+				var inner = element.find("div").eq(1);
+				var completed = element.find("div").eq(2);
+				
+				var target = element.find("input");
+
+				/*scope.tempList = [{
+					id : 1,
+					name: "temp",
+				}, {
+					id : 2,
+					name : "asd"
+				}];*/
+
+				scope.temp = {};
+				//scope.spans = [];
+
+				scope.callback = {
+					selected : function() {
+						insertText(scope.temp.name);
+					}
+				};
+
+				target.on("keypress",function(ev) {
+					if(ev.which == 13)  {
+						
+						insertText(scope.temp.name);
+						
+						
+						scope.$apply();
+						
+						ev.preventDefault();
+						
+					} 
+					
+				});
+
+				target.on("keydown", function(ev) {
+					if(ev.which == 8) {
+						console.log(scope.temp);
+						if(	(scope.temp.hasOwnProperty("name") && scope.temp.name.length == 0) ||
+							(!scope.temp.hasOwnProperty("name") &&  
+							scope.q.length > 0 ) ) {
+							
+							scope.q.pop();
+							scope.$apply();	
+						}
+					}
+				})
+
+
+				var insertText = function(txt) {
+					
+					scope.q.push(txt);
+					scope.temp = {};
+					console.log(scope.q);
+					
+					// completed.append("<span>" + txt + "</span>")
+				};
+
+			}
+
+		};
+	});
+	
+	app.directive('contenteditable', function($sce) {
+  		return {
+    		restrict: 'A', 
+    		require: '?ngModel', 
+    		link: function(scope, element, attrs, ngModel) {
+
+      			if (!ngModel) return; // do nothing if no ng-model
+  				// Specify how UI should be updated
+  				ngModel.$render = function() {
+    				element.html($sce.getTrustedHtml(ngModel.$viewValue || ''));
+  				};
+
+  				// Listen for change events to enable binding
+  				element.on('blur keyup change', function() {
+    				scope.$evalAsync(read);
+  				});
+  				read(); // initialize
+
+		      	// Write data to the model
+		      	function read() {
+			        var html = element.html();
+			        
+			        if ( attrs.stripBr && html == '<br>' ) {
+      					html = '';
+    				}
+    				ngModel.$setViewValue(html);
+  				}
+    		}
+  		};
+	});
+
+
+	app.directive('pikaday', function() {
+
+		return {
+			restrict : "E",
+			scope : {
+				date  : "=",
+			},
+			template : '<input ng-model="q" type="text" id="attr.ids" />',
+			link : function(scope, element, attr) {
+				scope.q = "";				
+				var input = element.find("input");
+				input.attr("placeholder", attr.placeholder);
+				
+				var picker = new Pikaday({ 
+					field: input[0],
+					format: 'yyyy-MM-dd',
+					onSelect: function() {
+            			scope.date = scope.q;
+        			}
+				});
+				
+
+			}
+		}
+
+	});
+	// app.directive('')
+
+});// End Require

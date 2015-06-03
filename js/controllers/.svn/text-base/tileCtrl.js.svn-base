@@ -1,0 +1,181 @@
+define(['app'], function (app) {
+	"use strict";
+ 	app.controller('tileCtrl', function ($scope, $location, INIT, MyHTTP, Paginator, TempSavedData) {
+ 		var path = INIT.GET_MYWORKFLOWS;
+ 		var itemsPerPage = INIT.MAX_ITEMS_PAGE;
+ 		var data = [];
+
+ 		$scope.data = [];
+
+ 		var hexagonWidth = 150;
+ 		var hexagonHeight = 130;
+
+ 		$scope.lightboxDirective = $scope.$parent.lightbox;
+
+
+
+ 		/*
+ 		* I should make a directive for this
+ 		* need to change that soon
+ 		*/
+
+ 		$scope.nPages = 0; //Number of pages
+ 		$scope.tiles = []; //Current hexagon tiles
+
+ 		$scope.q = "";
+
+ 		$scope.tmpData = [];
+ 		
+ 		/*var honeyCombPoints = {
+ 			'height' : honeyCombContainer.offsetHeight,
+ 		}*/
+
+		$scope.filterTileByName = function(q) {
+ 			var regTmp;
+ 			var filterTmp = [];
+ 			
+ 			data = $scope.newData;
+ 			
+ 			if(q.length > INIT.FILTER_MIN) {
+ 				
+ 				var filterTmp = [];
+ 				var regTmp = new RegExp(q,"ig");
+ 				
+				for(var n = 0; n < data.length; n++ ) {
+					
+					if(data[n].name.match(regTmp) !== null  ) {
+						filterTmp.push(data[n]);
+					}
+				}
+
+				$scope.init.findNumberOfPages(filterTmp);
+				$scope.init.sortData(filterTmp, 1);
+				//console.log(filterTmp);
+
+ 			} else {
+ 				$scope.init.findNumberOfPages(data);
+				$scope.init.sortData(data, 1);
+ 			}
+ 			
+ 		} 		
+
+ 		$scope.filterTest = function(q) {
+ 			console.log(q)
+ 		}
+
+ 		$scope.init =  {
+
+ 			data : {},
+
+ 			loadData : function(path) {
+ 				var self = this;
+ 				MyHTTP.get(path).
+ 					then(function(result) {
+ 						data = result.data;
+ 						
+		 				/*self.findNumberOfPages(result.data.executives);
+		 				self.sortData(result.data.executives, 1);*/
+		 				self.afterLoadData(data);
+ 					},function(error) {
+ 						if(error.status == 403) $location.path("/login");
+						console.log(error);
+ 					});
+ 			},
+
+ 			loadDataPost : function(path, obj) {
+
+ 				var self = this;
+ 				MyHTTP.post(path, obj).
+ 					then(function(result) {
+ 						data = result.data;
+
+ 						self.afterLoadData(data);
+
+
+ 					},function(error) {
+ 						if(error.status == 403) $location.path("/login");
+ 						else alert("Connection Error");
+ 					});
+
+ 			},
+
+
+ 			findNumberOfPages : function(result) {
+ 				var itemsPerPages = this.setHoneyComb();
+ 				
+ 				$scope.nPages = Paginator.init(result.length, itemsPerPages.itemsPerPage );
+ 			},
+
+ 			/*
+	 		* Following function resort the data
+	 		* It will display only 13 elements per page
+	 		*/
+ 			sortData : function(result, actualPage) {
+ 				$scope.tiles = Paginator.reSort(result, actualPage, INIT.MAX_ITEMS_PAGE,  this.setHoneyComb() );
+ 			},
+
+ 			afterLoadData : function(result) {
+ 				//console.log(result);
+ 			},
+
+			setHoneyComb : function() {
+
+	 			var seq = [];
+	 			var cont = 0;
+
+	 			var honeyCombContainer = document.querySelector(".main");
+	 			var contHeight = honeyCombContainer.offsetHeight;
+	 			var contWidth = honeyCombContainer.offsetWidth;
+	 			var maxCol = Math.floor( (contWidth - 100) / hexagonWidth);
+	 			var maxRow = Math.floor((contHeight-100) / hexagonHeight);
+	 			var desc = false;
+
+	 			if(maxRow % 2 == 0) maxRow --;
+
+	 			var initialValue = maxCol -  ( Math.floor(maxRow / 2) );
+	 			
+	 			var values = {
+	 				initial : initialValue,
+	 				max : maxCol,
+	 				itemsPerPage : 0,
+	 			}
+
+	 			for(var n = 0; n <  maxRow; n++) {
+	 				
+	 				for(var i = 0; i < initialValue; i++) {
+	 					cont++;
+	 				}
+
+	 				if(initialValue == maxCol) desc = true; 
+	 				if(desc) initialValue --;
+	 				else initialValue ++;
+
+
+	 			}
+	 			values.itemsPerPage = cont;
+	 			return values;
+
+	 		}
+ 		}
+ 		/* -- UI FUNCTIONS -- */
+
+ 		/*
+ 		* Following function is the logical 
+ 		* bridge between pagination directive	
+ 		* and our controller
+ 		*/ 
+ 		$scope.pagination = function(index) {
+ 			$scope.init.sortData(data, index, INIT.MAX_ITEMS_PAGE);
+ 		}
+
+ 		$scope.clickedTile = function(id) {
+ 			
+ 		}
+
+ 		$scope.tileNotFilled = function(obj) {
+ 			if(obj.tile.id == undefined) return "tile-inactive";
+ 		}
+ 		/* -- INIT functions --  */
+
+    });
+});

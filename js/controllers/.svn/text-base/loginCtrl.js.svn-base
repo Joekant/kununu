@@ -1,0 +1,20 @@
+define(['app','js/services/base64.js'], function (app) {
+	"use strict";
+ 	app.register.controller('loginCtrl', function (INIT,$location, $scope, MyHTTP, Base64) {
+ 		var loginPath = INIT.LOGOUT_PATH;
+ 		$scope.username = "";
+ 		$scope.password = "";
+
+ 		
+ 		$scope.submit = function() {
+ 			var auth = $scope.username + ":" + $scope.password;
+ 			MyHTTP.login(loginPath, Base64.encode(auth)).
+ 				then(function(data){
+ 					$location.path("/mytasks");
+ 				},function(error){
+
+ 				});
+ 		}
+ 		
+    });
+});

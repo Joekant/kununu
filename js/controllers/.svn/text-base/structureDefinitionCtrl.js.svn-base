@@ -1,0 +1,529 @@
+define([
+        'app',
+        'js/directives/structureDefinition.js',
+        'js/directives/LogicForm.js'
+    ], 
+    function(app) {
+        'use strict';
+    
+    /*
+    * Form definition Container
+    */
+    app.register.controller('structureDefinitionCtrl',function($scope, MyHTTP, INIT, CurrentUser, $controller) {
+
+                angular.extend(self, $controller('tileCtrl', {$scope : $scope}) );
+                        console.log($scope);
+
+        var staticName = 3;
+
+        $scope.instances = [];
+          
+        $scope.executive = {};
+        $scope.executive.instances = [];
+        $scope.executive.definitionId = 0;
+        $scope.lines = [];
+
+        $scope.allGroups = [];
+
+        /*$scope.loadedProcessDefinitions = [];
+        $scope.entryPointList = []; */
+
+        $scope.modalDataTemp = {
+            structureIndex : 0,
+            data : {}
+        };
+
+        //$scope.
+
+
+        $scope.allEntryPoints = [];
+        var completeEntryPoints = [];
+        $scope.selectedEntryPoint = {};
+
+        $scope.definitions= [];        
+
+        $scope.drag = function(event, ele , type) {
+            event.dataTransfer.setData("Text", type);
+        }
+
+        $scope.structureToModal = function(mIndex, mData) {
+        
+            $scope.modalDataTemp.structureIndex = mIndex;
+            if( mData != undefined ) {
+                $scope.modalDataTemp.data = mData;
+            } else {
+                $scope.modalDataTemp.data = {};
+            }
+        }
+
+
+        var getListOfGroups = function() {
+            var groupsAndUsers =  CurrentUser.getGroupAndUsers();
+            var groups = groupsAndUsers.groups;
+            var tempGroups = [];
+            
+            //Setting the group list for the autocomplete. "Name"
+            MyHTTP.get(INIT.GET_ALL_USERS).
+                then(function(result) {
+                    $scope.allGroups = result.data.groupsList;
+                });
+
+        }
+        
+        MyHTTP.get(INIT.GET_ALL_ENTRY_POINTS).
+            then(function(response) {
+                
+                var tempFormList = [];
+                var obj = {};
+                completeEntryPoints = response.data;
+
+                /*
+                * Server encodes json as URI
+                * Here, we decode the json part of the response here
+                */
+
+                for(var i = 0; i < response.data.length; i ++) {
+                    obj.name = response.data[i].name;
+                    //obj.definition = encodeURIComponent(response.data[i].definition);
+                    obj.definition = response.data[i].definition;
+                    tempFormList.push(obj);
+                    obj = {};
+                }
+                // console.log(tempFormList);
+                $scope.allEntryPoints = tempFormList;
+                /*console.log($scope.allEntryPoints);*/
+
+                /* Loading the list of group and user here, avoiding delay */
+                getListOfGroups()
+            });
+
+
+        MyHTTP.get(INIT.GET_DEFINITIONS).
+            then(function(response) {
+                var definitionTemp = [];
+                for(var d in response.data.entries) {
+                    definitionTemp.push({
+                        'name' : response.data.entries[d].name,
+                        'id' : response.data.entries[d].key
+                    });
+                }
+
+                $scope.definitions = definitionTemp;
+                
+                definitionTemp = null;
+                
+            }, function(error) {
+                alert(error);
+            });  
+
+
+        $scope.modalToStructure = function() {
+            $scope.instances[$scope.modalDataTemp.structureIndex].data = $scope.modalDataTemp.data;
+        }
+
+        $scope.addLine = function( mData ) {
+            if( $scope.tempPoint.data == undefined  ) {
+
+                $scope.tempPoint = mData;
+
+            } else {
+            
+                if(angular.equals($scope.tempPoint, mData)) {
+
+                } else {
+                    var temp = [mData.data.position, $scope.tempPoint.data.position ];  
+                    $scope.lines.push(temp);
+                    $scope.lineIni(temp);
+
+                    mData.addPreviousSteps($scope.tempPoint.getData() );
+                    $scope.tempPoint.addNextSteps( mData.getData() );
+
+                    /*mData.addPreviousSteps($scope.tempPoint.getData.name() );
+                    $scope.tempPoint.addNextSteps( mData.getData.name() );*/
+                }
+
+                $scope.tempPoint = {};
+            }
+
+        };
+
+        $scope.addNewInstance = function(mTop, mLeft) {
+            staticName++;
+            $scope.instances.push({
+                
+                position : {
+                    top : mTop, 
+                    left : mLeft,   
+                },
+                nextSteps : [],
+                previousSteps : [],   
+                data : {
+                    name: "Step" + staticName,
+                }
+            });
+        };
+
+        $scope.instances.push({
+            position : {
+                top:50,
+                left:200, 
+            },
+            data : {
+                'name' : 'Step1'
+            }
+        });
+        
+        $scope.instances.push({
+            position : {
+                top:50,
+                left:350,  
+            },
+            data : {
+                'name' : 'Step2'
+            }
+        
+        });
+
+        $scope.instances.push({
+            position : {
+                top:50,
+                left:450,  
+            },
+            data : {
+                'name' : 'Step3'
+            }
+        });
+
+        /*$scope.startWorkflow = function() {
+            
+            
+            var proto = new ComposeData();
+            proto.preparingInstances();
+        
+            var wrap = proto.wrapData();
+            var jsonWrap = angular.toJson(wrap);
+
+            var hash = CryptoJS.MD5( jsonWrap );
+
+            var param = INIT.START_EXECUTIVE + wrap.definitionId + "&name=" + wrap.name + "&subject=" + wrap.name +
+                        "&md5sum=" + hash;
+
+            
+            console.log(wrap);
+            
+        };*/
+
+        $scope.loadWorkflow = function(){
+
+
+
+        } 
+
+        $scope.saveWorkflow = function() {
+            var proto = new ComposeData();
+            proto.preparingInstances();
+        
+            var wrap = proto.wrapData();
+            var jsonWrap = angular.toJson(wrap);
+
+            
+
+            var param = INIT.CREATE_PROCESS_DEFINITION + wrap.name;
+
+            MyHTTP.post(param, jsonWrap).
+                then(function(response) {
+                    console.log(response);
+                });
+            
+            console.log(jsonWrap);
+ 
+        }
+
+
+        var renderObject = function() {    
+          
+            this.init = function(instanceTest) {
+                console.log(instanceTest);
+                var tilesPosition = [];
+                var tilesPositionGroup = [];
+                var instanceTemp = [];
+            
+                for(var i = 0; i < instanceTest.length; i ++) {
+                  
+                    for(var k = 0; k < instanceTest[i].steps.length; k ++) {
+                    
+                        instanceTest[i].steps[k].nextSteps = [];
+                        instanceTest[i].steps[k].previousSteps = [];
+
+                        if(instanceTest[i].steps[k + 1] != undefined) {
+                            instanceTest[i].steps[k].nextSteps.push( instanceTest[i].steps[k + 1] );
+                        } 
+
+                        if (instanceTest[i].steps[k - 1] != undefined) {
+                            instanceTest[i].steps[k].previousSteps.push( instanceTest[i].steps[k - 1] );
+                        }
+
+                        instanceTemp.push(instanceTest[i].steps[k]);
+                        //$scope.instances.push(instanceTest.instances[i].steps[k]);
+                        
+                        tilesPosition.push(instanceTest[i].steps[k].position);
+
+                    }
+
+                    tilesPositionGroup = tilesPositionGroup.concat(this.getLines(tilesPosition));
+
+                  
+                    $scope.instances = instanceTemp;
+                    tilesPosition = [];
+                
+                }
+
+                $scope.lines = tilesPositionGroup;
+
+                //$scope.instances = instanceTemp;  
+            }
+
+            this.getLines = function(lines) {
+                var tempLinesGroups = [];
+                var tempLines = [];
+                if(lines.length == 0) return;
+                
+                for(var n = 0; n < lines.length - 1; n ++) {
+                    tempLines.push(lines[n]);
+                    tempLines.push(lines[n + 1]);
+
+                    tempLinesGroups.push(tempLines);
+                    tempLines = [];
+                }
+
+                return tempLinesGroups;
+            }
+        };
+
+        //var renderInstance  = new renderObject();
+        /*renderInstance.init();
+        $timeout(function(){
+          
+          $scope.redrawCanvas();
+        },100);*/
+
+        var createObjectModel = function() {
+            this.instances = [];
+            this.mData = [];
+
+            var modelTemp = {};
+
+            this.init = function() {
+                this.mData = $scope.instances;
+                this.indentifyInstances();
+                return this;
+            }
+
+            this.indentifyInstances = function() {
+                var mTemp = {}; 
+
+                for( var instances in this.mData) {
+                    mTemp = this.mData[instances];
+              
+                    if(mTemp.previousSteps.length == 0  ) {
+                        this.addInstance(mTemp);
+                    }else {
+                
+                    }
+              
+                }
+
+            /*console.log(this.instances);
+            console.log( JSON.stringify(this.instances) );*/  
+            }
+
+            this.addInstance = function(mTemp) {
+                //console.log(mTemp);
+                var step = mTemp;
+                var stepTemp = {};
+
+
+                var temp = {};
+
+                var instanceObject = {
+                    name : mTemp.name,
+                    abbreviatedName : mTemp.name,
+                    steps : []
+                };
+
+                do  {
+                    stepTemp.name = step.name;
+                    stepTemp.abbreviatedName = step.name;
+                    stepTemp.position = step.position;
+
+                    if(step.data != undefined) {
+                        stepTemp.data = step.data;  
+                    } else {
+                        stepTemp.data = step;
+                    }
+
+                    instanceObject.steps.push( stepTemp );
+                  
+                    temp = step;
+                    step = step.nextSteps[0];
+                  
+                    stepTemp = {};
+
+                } while(temp.nextSteps.length > 0)
+
+                this.instances.push(instanceObject);
+
+            }
+
+        };
+
+
+        var ComposeData = function() {
+            
+            var instances = $scope.instances;
+            var newInstances = [];
+            var rootInstances = [];
+            
+            var findPreviousAndNextSteps  = function(obj) {
+                var cont = 0;
+                
+                var returnObject = {
+                    nextSteps : [],
+                    previousSteps: []
+                };
+
+                for(var ns in obj.nextSteps) {
+                    returnObject.nextSteps.push(obj.nextSteps[ns].index);
+                }
+
+                for(var ns in obj.previousSteps) {
+                    returnObject.previousSteps.push(obj.previousSteps[ns].index);   
+                }
+
+                return returnObject;
+
+            }
+
+            //Data validation stuff goes here!!
+            var setupInstanceData = function(data) {
+
+                var obj = {};
+                var entryPointId= -1;
+
+
+                if( data.hasOwnProperty("recipientsTo")  ) {
+                    obj.recipientsTo = data.recipientsTo.split(", ");
+                } else {
+                    obj.recipientsTo = [];
+                }
+
+                if(data.hasOwnProperty('recipientsCc')) {
+                    obj.recipientsCc = data.recipientsCc.split(", ");
+                } else {
+                    obj.recipientsCc = [];
+                }
+
+                if(data.hasOwnProperty('recipientGroupsTo') && data.recipientGroupsTo.hasOwnProperty("index")) {
+                    var groupArray = [];
+                    
+                    obj.recipientGroupsTo = [];
+                    
+                    //console.log(data.recipientGroupsTo.index.id);
+                    obj.recipientGroupsTo.push(data.recipientGroupsTo.index.id)
+                    
+                } else {
+                    obj.recipientGroupsTo = [];
+                }
+
+                if(data.hasOwnProperty('recipientGroupsCc') && data.recipientGroupsCc.hasOwnProperty("index")) {
+
+                    obj.recipientGroupsCc = [];
+                    
+                    obj.recipientGroupsCc.push(data.recipientGroupsCc.index.id)
+                } else {
+                    obj.recipientGroupsCc = [];
+                }
+
+
+
+                obj.name = data.name;
+                obj.description = data.description;
+
+                for(var i = 0; i < completeEntryPoints.length; i ++) {
+                    /*console.log(completeEntryPoints[i]);*/
+                    if (data.selectedEntryPoint.name == completeEntryPoints[i].name) {
+                        entryPointId = completeEntryPoints[i].epdId;
+                    }
+                }
+
+                obj.selectedEntryPoint = entryPointId ;
+
+                return obj;
+
+            }
+
+            this.preparingInstances = function() {
+                var cont = 0;
+                var obj = {};
+                var tempInstance = [];
+                var previousAndNextSteps = {};
+
+                for(var i in instances) {
+                     tempInstance = instances[i];
+
+                    //If there is no previous steps, that means the instances is root
+                    if( instances[i].previousSteps.length == 0 ) {
+                        rootInstances.push(cont);
+                    }
+
+                    obj.data = setupInstanceData(tempInstance.data);
+                        
+                    //obj.data = tempInstance.data;
+
+                    obj.index = tempInstance.index;
+                    obj.position = tempInstance.position;                    
+                    
+                    previousAndNextSteps =  findPreviousAndNextSteps(tempInstance);
+
+                    obj.previousSteps = previousAndNextSteps.previousSteps;
+                    obj.nextSteps = previousAndNextSteps.nextSteps;
+
+                    newInstances.push(obj);
+
+                    obj = {};
+                    cont++
+
+                }
+
+                return true;
+            }
+
+
+            this.wrapData = function() {
+                
+                var exec = $scope.executive;
+                if(exec.definition.name === exec.definition.index.name) {
+
+                    var obj = {
+                        'name' : exec.name,
+                        'definitionId' : exec.definition.index.id,
+                        'subject' : exec.name,
+                        'rootInstance' : rootInstances,
+                        'instances' : newInstances
+                    };
+                }
+
+                return obj;
+            }
+        }
+    
+
+        $scope.test = function(){
+            var test = new ComposeData();
+            test.preparingInstances();
+        }
+
+    }); // END CONTROLLER
+
+
+});

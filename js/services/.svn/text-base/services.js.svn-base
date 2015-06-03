@@ -1,0 +1,292 @@
+/*app.factory( "MyCookies", function($window, INIT) {
+    
+    return {
+
+        //Private Method, Writing the cookie
+        setCookie : function(value) {
+            window.document.cookie = value;
+        },
+
+        // Take the value of a cookie
+        // http://www.w3schools.com/js/js_cookies.asp
+        getCookie : function(c_name) {
+            var c_value = document.cookie;
+            var c_start = c_value.indexOf(" " + c_name + "=");
+            if (c_start == -1) {
+              c_start = c_value.indexOf(c_name + "=");
+            }
+            if (c_start == -1){
+              c_value = null;
+            } else {
+                c_start = c_value.indexOf("=", c_start) + 1;
+                var c_end = c_value.indexOf(";", c_start);
+                if (c_end == -1) {
+                    c_end = c_value.length;
+                }
+
+                c_value = unescape(c_value.substring(c_start,c_end));
+            }
+            if( c_value == undefined || c_value === null || c_value.length == 0 ) c_value = "{}";
+            return c_value;
+        },
+
+        delCookie : function(value) {
+            var temp = value + "=dimelo;" + " expires=Thu, 01-Jan-1970 00:00:01 GMT";
+            this.setCookie(temp);
+        },
+
+        loggedIn  : function() {
+            // console.log(this.getCookie(INIT.LOGIN_COOKIE_USER));
+            if( this.getCookie(INIT.LOGIN_COOKIE_USER) == "{}" ) return false
+            else return true;
+        },
+    
+    }
+
+});*/
+
+
+define(['app'], function(app) {
+    "use strict";
+
+    /*
+    * Simple promise implementation
+    * get, post, login and delete methods
+    * if, the response gets an 403 error,
+    * it should redirect the user to the login
+    */
+    app.factory('MyHTTP', function(INIT, $http,$q) {
+        return {
+            get : function(url) {
+                return $http.get(INIT.APP_PATH + url)
+                    .then(function(response){
+                        return response;
+                    }, function(response) {
+                        return $q.reject(response);
+                    });
+            },
+
+            login : function(url, auth) {
+                return $http({
+                        'headers' :  {
+                            Authorization : 'Basic ' + auth
+                        },
+                        params : {'nocache' : new Date().getTime() },
+                        method: 'POST',
+                        url: INIT.APP_PATH + url
+                    }).then(function(response){
+                        return response;
+                    }, function(response) {
+                        return $q.reject(response);
+                    });  
+            },
+
+            post : function(url, body) {
+                if (body == undefined) body = '';
+                return $http({
+                        headers: {
+                            'Content-Type' : 'application/x-www-form-urlencoded'
+                        },
+                        params : {'nocache' : new Date().getTime() },
+                        method: 'POST',
+                        url: INIT.APP_PATH + url,
+                        data: body,
+                    }).then(function(response){
+                        return response;
+                    }, function(response) {
+                        return $q.reject(response);
+                    });    
+            }
+        };
+    }); //End MyHTTP
+    
+    app.factory('serializeUrl', function() {
+
+        return ( function(obj) {
+            var temp = "";
+
+            for(var key in obj) {
+                if(key ==="$$hashKey") continue;
+                temp += key + "=" + obj[key] + "&";
+            }
+            return temp.substring(0, temp.length - 1);
+            
+        });
+    });
+
+    app.factory('CurrentUser', function(MyHTTP, INIT, $location) {
+        var user = {};
+        var groupAndUsers = {};
+        return {
+            getUser : function() {
+                return user;
+            },
+
+            getGroupAndUsers : function() {
+                return groupAndUsers;
+            },
+            
+            retrieveUser : function() {
+                MyHTTP.post(INIT.GET_USER).
+                    then(function(result) {
+                        var first;
+                        groupAndUsers = result.data;
+                        for (first in result.data.users) break;
+                        
+                        user =  result.data.users[first];
+    
+                        //console.log(result)
+                        // return result.data;
+                    }, function(error){
+                        
+                    });
+            }
+
+        };
+    });
+
+    app.factory('Dates', function() {
+        var actualDate = new Date();
+        var actualMonth = actualDate.getMonth() + 1;
+        var actualYear = actualDate.getFullYear();
+    
+        return {
+            getActualMonth : function() {
+                return actualMonth;
+            },
+
+            prettyfy : function(m) {
+                return 'startDate=' + actualYear + '-' +  m +  '-'  + '01' + '&' +  'endDate=' + actualYear+ '-' + m + '-' + '30';
+            },
+
+            actualDate : function() {
+                return 'startDate=' + actualYear + '-' + actualMonth + '-' + '01' + '&' +  'endDate=' + actualYear + '-' + actualMonth + '-' + '30';
+            },
+
+            customDate  : function(dates) {
+                var d = new Date(dates);
+                return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
+            }
+        }
+    });
+
+
+    /*
+    * Handle everything about Pagination
+    * 
+    */
+
+    app.factory('Paginator', function(INIT) {
+        return {
+
+            /*
+            * Determine how many pages 
+            * we need to display
+            */
+            init : function(n, itemsPerPages) {
+                var maxItems =  itemsPerPages;
+                //var maxItems =  19;
+                var nPages = n / maxItems;
+
+                //If nPages is an integer 
+                if(nPages % 1 === 0) {
+
+                } else {
+                    nPages= Math.floor(++nPages);
+                }
+                return nPages;
+            },
+            
+            /*
+            * It recives the complete response data as parameter
+            * with an index of the selected page (pagination) after being clicked
+            * then it will return an array with only 13 objects.
+            * Those object will be displayed with ng-repeat
+            */
+            reSort : function(data, actualPage, itemsPerPage, honeyValues) {
+                var tempData = [];
+                var tempDataWrapper = [];
+                var cont= 0;
+                var desc = false;
+                itemsPerPage = honeyValues.itemsPerPage;
+                //console.log(honeyValues);
+                var actualHoneyValue = honeyValues.initial - 1;
+                var maxValue = honeyValues.max;
+                
+                for(var n = (actualPage-1) * itemsPerPage; n < actualPage * itemsPerPage; n++ ) {
+                    if(data[n] == undefined) {
+                        tempData.push({});
+                    } else {
+                        tempData.push(data[n]);    
+                    }
+                    /*  Wrapp the whole data in a wrapper array
+                        Need to find a clever way to do that, that works in all cases */
+                    /*if(cont == 4 || cont == 10 || cont == 15) {
+                    //if(cont == 4 || cont == 10 || cont == 17 || cont == 23 || cont == 28 ) {
+                        tempDataWrapper.push(tempData);
+                        tempData = [];
+                    }*/
+
+                    if( cont == actualHoneyValue ) {
+                    //if(cont == 4 || cont == 10 || cont == 17 || cont == 23 || cont == 28 ) {
+                        tempDataWrapper.push(tempData);
+                        tempData = [];
+                        
+                        if(cont == maxValue - 1 && desc == false ) {
+                            desc = true;
+                            
+                        }
+                        
+                        if(desc == true) {
+                            actualHoneyValue --;
+                            
+                        } else  {
+
+                            actualHoneyValue ++;
+                        }
+                        //console.log(actualHoneyValue);
+                        cont = -1;
+                        
+                    }
+
+                    cont++;
+                    
+                }
+                
+                return tempDataWrapper;
+            },
+
+            objToArray : function(data) {
+                var tempData = [];
+                for(var key in data) {
+                    tempData.push(data[key]);
+                }
+                return tempData;
+            }
+
+        };
+    }); //End Paginator
+
+    /*
+    * Simple implementation to send data throught the ng-view
+    * we can send data once a route change
+    * IMPORTANT to clean the savedData variable after getting the data,
+    * so if the user reloads the page, he can gets new data from the server
+    */
+    app.factory('TempSavedData', function() {
+        var savedData = {};
+        return {
+            set : function(data) {
+                savedData = data;
+            },
+            get : function() {
+                return savedData;
+            },
+
+            clear : function() {
+                savedData = {};
+            }
+        }
+    }); //End TempSaveData
+
+});

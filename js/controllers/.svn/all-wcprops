@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/wsd-app-workflow2/!svn/ver/276/branches/firelex/src/main/webapp/js/controllers
+END
+loginCtrl.js
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/wsd-app-workflow2/!svn/ver/223/branches/firelex/src/main/webapp/js/controllers/loginCtrl.js
+END
+formBuilderCtrl.js
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/wsd-app-workflow2/!svn/ver/195/branches/firelex/src/main/webapp/js/controllers/formBuilderCtrl.js
+END
+structureDefinitionCtrl.js
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/svn/wsd-app-workflow2/!svn/ver/276/branches/firelex/src/main/webapp/js/controllers/structureDefinitionCtrl.js
+END
+myTasksCtrl.js
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/wsd-app-workflow2/!svn/ver/298/branches/firelex/src/main/webapp/js/controllers/myTasksCtrl.js
+END
+securityCtrl.js
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/wsd-app-workflow2/!svn/ver/276/branches/firelex/src/main/webapp/js/controllers/securityCtrl.js
+END
+tileCtrl.js
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/wsd-app-workflow2/!svn/ver/298/branches/firelex/src/main/webapp/js/controllers/tileCtrl.js
+END

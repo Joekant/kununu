@@ -1,0 +1,330 @@
+define(['app'], function(app) {
+    'use strict';
+
+    app.register.directive('structure', function($timeout) {
+        var eleWidth = 75;
+        var eleHeight = 50;
+        var time;
+
+        var dropHoverEventType = "";
+        var cont = 0;
+        var lightbox = angular.element(document.getElementById("lightbox"));
+
+        return {
+            restrict : "E",
+            replace : false,
+            template : '<div dropover="addConnector($event,$element)" class="button-send">\
+                            <h6><span style="display:block">{{data.data.name}}</span></h6>\
+                        </div>',
+            // template : '<div style = "width:100%; height:100%" dropover="addConnector($event,$element)">{{data.name}}</div>',
+            scope :  {data : "=", addConnector : "&" },
+
+            controller : function($scope) {
+                
+                cont++;      
+                
+                $scope.data.data.selectedEntryPoint = {};
+                $scope.data.data.recipientGroupsTo = [];
+                $scope.data.data.recipientGroupsCc = {};
+                $scope.data.data.description = "";
+                $scope.data.previousSteps = [];
+                $scope.data.nextSteps = [];
+
+
+                //$scope.data.id = ;
+                //$scope.data.data.recipientGroupsTo = 2;
+
+                $scope.getNextSteps = function() {
+                    console.log($scope.data.nextSteps);
+                }
+
+                $scope.getData = function() {return $scope.data;  }
+
+                $scope.isInstance = function() {
+                    if( $scope.data.previousSteps.length == 0 ) {
+                        return false;
+                    } else {
+                        return true;
+                    }
+                };
+
+                $scope.addPreviousSteps = function(stepRefence) {
+                    if( ! $scope.data.hasOwnProperty("previousSteps") ) $scope.data.previousSteps = [];
+                    else $scope.data.previousSteps.push(stepRefence);
+                }
+        
+                $scope.addNextSteps = function(stepReference) {
+                    if( ! $scope.data.hasOwnProperty("nextSteps") ) $scope.data.nextSteps = [];
+                    else $scope.data.nextSteps.push(stepReference);
+                    
+                }
+
+                $scope.updateModel = function(model) {
+                    $scope.data.config = model;
+                }
+            
+            },
+
+            link : function(scope, element,attr) {
+                
+                var isClicked = false;
+                var isMoved = false;
+                var xx, yy;
+                var elParent = element.parent();
+                
+                var offsets = {
+                    top : 0,
+                    left : 0
+                };
+                
+                var findPosition = function() {
+                    var t = element[0].offsetParent;
+                
+                    for(var n = 0; n < 5; n++) {
+                    
+                
+                        offsets.top += t.offsetTop;
+                        offsets.left += t.offsetLeft; 
+                
+                        t = t.offsetParent;
+                    
+                    }    
+                }
+                findPosition();
+                
+
+                var index = parseInt(attr.index);
+
+                scope.data.index = index;
+
+
+                var openModal = function() {
+                    var modal = angular.element(document.getElementById("structure-option"));
+                    //Sends the data to the modal
+
+                    scope.$parent.structureToModal(index, scope.data.data);
+
+
+                    //Appears the modal
+
+                    lightbox.css("visibility", "visible");
+                    modal.css({
+                        "display" : "block",
+                        "visibility" : "visible"
+                    });
+
+                    
+                };
+
+                scope.resetConnector = function(_event, _element) {
+                    _element.css("background-color","red");
+                    $timeout.cancel(time);
+                };
+
+                scope.addConnector = function(_event, _element) {
+                    scope.$parent.addLine(scope);
+                }
+
+                element.css({
+                    top : scope.data.position.top + "px",
+                    left : scope.data.position.left + "px"
+                });
+                var test = element[0].offsetLeft;
+                
+                offsets.top += 2;
+                offsets.left += 2;
+                
+                var handleOutsideMove = function() {
+                    elParent.bind("mousemove", function(e) {
+                        
+                        if(isClicked)  {                         
+                            if(e.target.parentNode === this) { // outside
+                                
+                                
+                                
+                                xx = (e.layerX ) - (eleWidth / 2);
+                                yy = (e.layerY ) - (eleHeight / 2);
+
+                                element.css({
+                                    top : ( yy )+ 'px',
+                                    left: ( xx  ) + 'px'
+                                });
+                                
+                            } else { // inside
+
+                                xx = (  e.clientX - offsets.left  ) - (eleWidth / 2);
+                                yy = ( ( (e.clientY + document.body.scrollTop) - offsets.top ) ) - (eleHeight / 2);
+
+                               element.css({
+                                    
+                                    top : ( yy ) + 'px',
+                                    left: ( xx ) + 'px'
+                                });
+                            } 
+
+                            scope.data.position.top = yy ;
+                            scope.data.position.left = xx;
+
+                            scope.$parent.redrawCanvas();
+
+                            isMoved = true;
+                        }
+
+                    });
+
+                    elParent.bind("mouseup", function() {
+                        isMoved = false;
+                        isClicked = false;
+
+                        elParent.unbind("mousemove")
+                    });
+                }
+
+                element.bind('mousedown', function(e) {
+                    isClicked = true;
+                    xx = parseInt( element.css("left") );
+                    yy = parseInt( element.css("top") );
+
+                    handleOutsideMove();
+                    
+                });
+
+                element.bind('mouseup', function(e) {
+
+                    var mEl = e.srcElement.parentNode;
+                    
+                    if(!isMoved) {
+                        
+                        openModal();
+                    }
+                    
+                    isMoved = false;
+                    isClicked = false;
+                    
+                });
+
+                element.bind('mouseleave', function(e) {
+                    /*isClicked = false;
+                    isMoved = false;*/
+                });
+
+                element.bind('mousemove', function(e) {
+                    
+                    /*console.log("§here");
+                    if(isClicked) {
+
+                        xx = (e.offsetX + xx) - (eleWidth / 2);
+                        yy = (e.offsetY + yy) - (eleHeight / 2); 
+                        if(yy <= 0 ) return false;
+
+                    
+                      
+                      element.css({
+                            top : ( yy )+ 'px',
+                            left: ( xx )+ 'px'
+                        });
+
+                        scope.data.position.top = yy;
+                        scope.data.position.left = xx;
+
+                        scope.$parent.redrawCanvas();
+                        isMoved = true;
+                    }  */
+
+                    
+
+                });
+            } //link
+
+        }; //Return
+    });
+
+
+    app.register.directive('canvasStructure' , function($compile, $timeout) {
+        var canvas;
+        var ctx;
+        
+        var eleWidth = 75;
+        var eleHeight = 50;
+
+        var elNumber = 0;
+
+        return {
+            
+            link : function(scope, element) {      
+                
+                var containerEl = element.parent();
+
+                scope.tempPoint = {};
+                
+                canvas = element[0];
+                scope.ctx = canvas.getContext("2d");
+
+                scope.addNewElement = function(_event, _element) {
+
+                    scope.tempPoint = {};
+
+                    if( _event.dataTransfer.getData("Text") != "instances" ) return false;
+
+                    scope.addNewInstance(_event.offsetY, _event.offsetX);
+
+                };
+
+                scope.redrawCanvas = function() {
+                    // console.log(scope.lines);
+                    scope.ctx.clearRect(0,0,800,800);
+                    scope.ctx.beginPath();
+
+                    for(var n = 0; n < scope.lines.length; n ++) {
+
+                      var coord1 = scope.lines[n][0];
+                      var coord2 = scope.lines[n][1];
+                      var temp = [];
+                      
+
+                      temp.push(coord1,coord2);
+                      scope.lineGroupDraw(temp);
+                    }
+
+                    scope.ctx.stroke();
+
+                } ;
+
+                scope.lineGroupDraw  = function(coords) {
+                    var cord1 = coords[0];
+                    var cord2 = coords[1];
+
+
+                    /*scope.ctx.moveTo(cord1.left,cord1.top);
+                    scope.ctx.lineTo(cord2.left,cord2.top);*/
+
+                    scope.ctx.moveTo(cord1.left + (eleWidth / 2) , cord1.top + (eleHeight / 2));
+                    scope.ctx.lineTo(cord2.left + (eleWidth / 2) ,cord2.top + (eleHeight / 2));
+
+                    scope.ctx.lineWidth = 2;
+                    scope.ctx.lineCap = 'round';
+                    scope.ctx.strokeStyle="#dddddc";
+
+                }
+
+                scope.lineIni = function(coords) {
+                    console.log("hi");
+                    var cord1 = coords[0];
+                    var cord2 = coords[1];        
+
+                    scope.ctx.beginPath();
+
+                    scope.ctx.moveTo(cord1.left + (eleWidth / 2) , cord1.top + (eleHeight / 2));
+                    scope.ctx.lineTo(cord2.left + (eleWidth / 2) ,cord2.top + (eleHeight / 2));
+
+                    scope.ctx.lineWidth = 2;
+                    scope.ctx.lineCap = 'round';
+                    scope.ctx.strokeStyle="#dddddc";
+
+                    scope.ctx.stroke();
+                } 
+
+            }
+        };
+    });
+});

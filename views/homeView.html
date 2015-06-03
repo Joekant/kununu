@@ -1,0 +1,105 @@
+<div global class="large-12 header columns">
+    <h2>For a better working life <br /> The new XING Jobs</h2>    
+
+    <div id="cont-form">
+        <div class="cont-form-cat-group">
+            <div class="cont-form-cat-keyword">
+                <input  class="rounded" type="text" placeholder="Enter keyword">
+            </div>
+            
+            <div triggersubmenu submenu="cont-form-cat-submenu" class="cont-form-cat-sel rounded">
+              in all categories <span class="right">&#x25BE;<span>
+            </div>
+
+            <div id="cont-form-cat-submenu" class="cont-form-cat-submenu form-sub rounded">
+
+                <div class="title">
+                    <span class="cat-span"><strong>Top Categories</strong></span>
+                    <a class="right" href="#">Search in all categories</a>
+
+                </div>
+
+                <hr />
+
+                <ul class="col">
+                    <li><label><input type="checkbox"> IT and telecommunication (4440)</label></li>
+                    <li><label><input type="checkbox"> Other (3638)</label></li>
+                    
+                </ul>
+                <ul class="col">
+                    <li><label><input type="checkbox"> Sales and commerce (3262)</label></li>
+                    <li><label><input type="checkbox"> Engineering / technical (2652)</label></li>
+                </ul>
+                
+
+                <ul class="col">
+                    <li><label><input type="checkbox"> Production, construction and trade (2586)</label></li>
+                    <li><label><input type="checkbox"> Health, medical and social (2130)</label></li>
+                </ul>
+
+                <ul class="col">
+                    <li><label><input type="checkbox"> Management / executive and strategic management (1982)</label></li>
+                    <li><label><input type="checkbox"> Finance and accounting (1979)</label></li>
+                </ul>
+
+                <hr />
+                
+                <div class="title">
+                    <span class="cat-span"><strong>More Categories</strong></span> 
+                </div>
+
+                <hr />
+                
+                <div class="more-cat">
+                
+                    <ul class="col">
+                        <li><label><input type="checkbox"> Not categorized (1468)</label></li>
+                        <li><label><input type="checkbox"> Administration (3638)</label></li>
+                        
+                    </ul>
+                    <ul class="col">
+                        <li><label><input type="checkbox"> Banking, insurance and financial services (1342)</label></li>
+                        <li><label><input type="checkbox"> Marketing and advertising (2652)</label></li>
+                        
+                    </ul>             
+
+                    <ul class="col">
+                        <li><label><input type="checkbox"> Purchasing, transport and logistics (719)</label></li>
+                        <li><label><input type="checkbox"> Training / instruction (230)</label></li>
+
+                    </ul>
+                       
+                    <ul class="col">
+                        <li><label><input type="checkbox"> Production, construction and trade (2586)</label></li>
+                        <li><label><input type="checkbox"> Health, medical and social (2130)</label></li>
+                    </ul>
+
+                    <ul class="col">
+                        <li><label><input type="checkbox"> Management / executive and strategic management (1982)</label></li>
+                        <li><label><input type="checkbox"> Finance and accounting (1979)</label></li>
+                    </ul>
+                </div>
+
+            </div>
+            <br class="end" />
+
+        </div>
+
+        <div class="cont-form-loc-group">
+            <div class="cont-form-location">
+                <input triggersubmenu submenu="cont-form-location-submenu" ng-model="city" ng-change="nChange()" class="rounded" type="text" placeholder="Location">
+                
+            </div>
+            <div id="cont-form-location-submenu" class="cont-form-location-submenu form-sub rounded">
+                <ul>
+                    <li ng-click="selectedCity(city)" ng-repeat="city in cities">{{city}}</li>
+                </ul>
+            </div>
+
+        </div>
+
+        <a id="send"  href="#" class="button">Send</a>
+
+    </div>
+</div>
+

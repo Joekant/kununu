@@ -1,0 +1,114 @@
+html {
+  background-color: #FDFEFF;
+  height: 100%; }
+
+body {
+  background-color: #FDFEFF;
+  height: 100%;
+  font-family: "Helvetica"; }
+
+ul, li {
+  list-style: none; }
+
+h2 {
+  color: white; }
+
+.rounded {
+  -webkit-border-radius: 3px !important;
+  border-radius: 3px !important; }
+
+.header {
+  background: linear-gradient(rgba(66, 136, 138, 0.45), rgba(66, 136, 138, 0.45)), url(../img/head.jpg) no-repeat;
+  background-size: 1000px 620px;
+  background-position: 0px -100px;
+  padding-top: 40px;
+  height: 400px; }
+
+#cont-form {
+  margin-top: 30px; }
+
+.form-sub {
+  background-color: white;
+  border: 1px solid #D3D3D3;
+  position: absolute;
+  width: 100%;
+  top: 37px;
+  display: none; }
+
+.active {
+  display: block; }
+
+#send {
+  height: 37px;
+  margin-left: 10px;
+  float: left;
+  padding-top: 9px; }
+
+.cont-form-loc-group {
+  display: table;
+  float: left;
+  margin-left: 10px;
+  position: relative;
+  width: 300px; }
+
+.cont-form-location-submenu ul {
+  margin: 0; }
+  .cont-form-location-submenu ul li {
+    font-size: 13px;
+    padding: 8px 8px 8px 8px;
+    cursor: pointer;
+    border-bottom: 1px solid #E8E8E8; }
+    .cont-form-location-submenu ul li:hover {
+      background-color: #F3F3F3; }
+
+.cont-form-cat-group {
+  display: table;
+  float: left;
+  position: relative; }
+  .cont-form-cat-group > div {
+    margin: 0;
+    padding: 0;
+    float: left; }
+  .cont-form-cat-group .cont-form-cat-keyword {
+    width: 225px; }
+  .cont-form-cat-group .cont-form-cat-sel {
+    background-color: #DBDBDB;
+    border: 1px solid #AFAFAF;
+    color: #424242;
+    cursor: pointer;
+    font-size: 15px;
+    padding: 7px;
+    height: 37px;
+    width: 225px; }
+
+.cont-form-cat-submenu {
+  top: 37px;
+  width: 450px; }
+  .cont-form-cat-submenu .title {
+    padding: 3px 10px 3px 10px; }
+  .cont-form-cat-submenu a {
+    /*font-weight:300;*/
+    font-size: 13px; }
+  .cont-form-cat-submenu .more-cat {
+    height: 140px;
+    overflow-x: scroll; }
+  .cont-form-cat-submenu .col {
+    /*display:inline;*/
+    display: table;
+    margin-top: 10px;
+    margin-bottom: 0; }
+    .cont-form-cat-submenu .col li {
+      font-size: 13px;
+      margin-left: 10px;
+      float: left;
+      width: 180px; }
+      .cont-form-cat-submenu .col li input {
+        margin: 0 !important; }
+
+.cat-span {
+  color: black;
+  font-size: 13px; }
+
+/*HACK*/
+hr {
+  margin: 0 !important; }
